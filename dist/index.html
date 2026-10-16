@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f56b4">
+  <meta name="description" content="Explore RideApp's Ocean Blue demo: sample restaurants, a food basket, taxi routes and maps. No real orders or payments.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>RideApp Demo | Food & Rides</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231f56b4'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial' font-size='44' fill='%23edf4ff'%3ER%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./vendor/leaflet.css">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./vendor/leaflet.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <button type="button" class="wordmark" data-action="home" aria-label="RideApp home">RideApp<span aria-hidden="true">●</span></button>
+      <span class="demo-badge">Interactive demo</span>
+    </header>
+    <main id="app" aria-live="polite"><p class="muted">Opening your demo…</p></main>
+    <noscript>This demo needs JavaScript. Enable it to explore Food and Ride.</noscript>
+    <p class="demo-footer">Demo only. No real orders, drivers or payments.</p>
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button type="button" data-action="home"><span aria-hidden="true">⌂</span>Home</button>
+      <button type="button" data-action="food"><span aria-hidden="true">🍲</span>Food</button>
+      <button type="button" data-action="ride"><span aria-hidden="true">🚕</span>Ride</button>
+      <button type="button" data-action="activity"><span aria-hidden="true">☷</span>Activity<span id="activity-count" class="nav-count" hidden></span></button>
+    </nav>
+  </div>
+  <div id="toast" role="status" class="toast" hidden></div>
+</body>
+</html>

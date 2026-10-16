@@ -1,0 +1,13 @@
+{
+  "name": "rideapp-demo",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Approved RideApp demo source and Claude Code handoff",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node checks/demo.mjs"
+  },
+  "devDependencies": {"linkedom": "0.18.12"}
+}

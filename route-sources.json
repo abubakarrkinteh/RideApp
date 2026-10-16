@@ -1,0 +1,38 @@
+[
+  {
+    "id": "brusubi",
+    "lat": 13.4074354,
+    "lng": -16.7306748,
+    "label": "Brusubi, Turntable, Tranquil, Sukuta, Kombo North, Brikama, West Coast, Gambia",
+    "source": "https://nominatim.openstreetmap.org/search?q=Brusubi%2C+The+Gambia&format=jsonv2&limit=1&countrycodes=gm",
+    "osm_type": "way",
+    "osm_id": 1184232733
+  },
+  {
+    "id": "senegambia",
+    "lat": 13.4431377,
+    "lng": -16.719757,
+    "label": "Senegambia, Sukuta, Kombo North, Brikama, West Coast, Gambia",
+    "source": "https://nominatim.openstreetmap.org/search?q=Senegambia%2C+The+Gambia&format=jsonv2&limit=1&countrycodes=gm",
+    "osm_type": "node",
+    "osm_id": 13196430998
+  },
+  {
+    "id": "bakau",
+    "lat": 13.477453,
+    "lng": -16.6779085,
+    "label": "Bakau, Serrekunda, Kanifing, Gambia",
+    "source": "https://nominatim.openstreetmap.org/search?q=Bakau%2C+The+Gambia&format=jsonv2&limit=1&countrycodes=gm",
+    "osm_type": "node",
+    "osm_id": 366356380
+  },
+  {
+    "id": "banjul",
+    "lat": 13.4410165,
+    "lng": -16.5627509,
+    "label": "Banjul, Gambia",
+    "source": "https://nominatim.openstreetmap.org/search?q=Banjul%2C+The+Gambia&format=jsonv2&limit=1&countrycodes=gm",
+    "osm_type": "relation",
+    "osm_id": 7224996
+  }
+]
