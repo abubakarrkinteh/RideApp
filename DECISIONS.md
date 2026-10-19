@@ -2,6 +2,14 @@
 
 Newest first. Record who decided, when, and why. Open questions live at the end.
 
+## 2026-10-19 — Food menu read from Supabase
+
+- **Approved by:** Kinteh ("yes").
+- **Change:** on start the app reads open restaurants and available menu items from Supabase (`dist/menu.js`) using the public settings in `dist/config.js`, and shows "Menu and prices from the RideApp test database." on the restaurant screen. If the request fails, the built-in demo menu stays and the old "Example menu and prices." text shows. Card details the database does not hold yet (tag, area, emoji, category) still come from the demo data. The page's security policy now allows requests to the Supabase project only.
+- **Design:** unchanged. No new screens or styles.
+- **Still simulated:** basket totals are worked out in the browser and nothing is sent when a demo order is placed. Real ordering through `place_order` needs sign-in first.
+- **Tested:** `npm test` (demo checks run offline and fall back to the demo menu; `checks/menu.mjs` covers the data mapping; database rules). In the in-app browser at phone size the restaurant screen showed the database notice and the basket total was D 575 with no console errors.
+
 ## 2026-10-19 — First database tables (applied to Supabase)
 
 - **Approved by:** Kinteh ("yes go for it").

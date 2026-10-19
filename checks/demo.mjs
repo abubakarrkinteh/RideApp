@@ -23,6 +23,7 @@ globalThis.window=window;globalThis.document=window.document;
 Object.defineProperty(globalThis,'navigator',{value:{},configurable:true});
 window.scrollTo=()=>{};let confirmValue=false;window.confirm=()=>confirmValue;
 globalThis.requestAnimationFrame=fn=>fn();
+globalThis.fetch=()=>Promise.reject(new Error('offline in tests'));console.warn=()=>{};
 await import('../dist/app.js');
 const $=selector=>{const el=document.querySelector(selector);assert(el,'Missing '+selector);return el;};
 const click=selector=>$(selector).dispatchEvent(new window.Event('click',{bubbles:true}));

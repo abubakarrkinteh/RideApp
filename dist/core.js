@@ -25,10 +25,11 @@ export const money = amount => 'D '+Math.round(amount).toLocaleString('en-GB');
 export const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const place = id => PLACES.find(p=>p.id===id);
 export const restaurant = id => RESTAURANTS.find(r=>r.id===id);
+export function useMenu(list){RESTAURANTS.splice(0,RESTAURANTS.length,...list);}
 export function validPoint(p){return !!p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180;}
 export function samePoint(a,b){return validPoint(a)&&validPoint(b)&&Math.abs(a.lat-b.lat)<0.00005&&Math.abs(a.lng-b.lng)<0.00005;}
 export function mapsURL(a,b){if(!validPoint(a)||!validPoint(b))throw new Error('Choose both locations.');const params=new URLSearchParams({api:'1',origin:`${a.lat},${a.lng}`,destination:`${b.lat},${b.lng}`,travelmode:'driving'});return 'https://www.google.com/maps/dir/?'+params.toString();}
-export function foodTotals(restaurantId,cart){const r=restaurant(restaurantId);let subtotal=0,count=0;const lines=[];if(r)for(const item of r.items){const quantity=cart[item.id]||0;if(!Number.isInteger(quantity)||quantity<0||quantity>20)throw new Error('Choose a quantity from 0 to 20.');if(quantity){lines.push({...item,quantity,total:item.price*quantity});subtotal+=item.price*quantity;count+=quantity;}}const delivery=count?50:0;return {lines,count,subtotal,delivery,total:subtotal+delivery};}
+export function foodTotals(restaurantId,cart){const r=restaurant(restaurantId);let subtotal=0,count=0;const lines=[];if(r)for(const item of r.items){const quantity=cart[item.id]||0;if(!Number.isInteger(quantity)||quantity<0||quantity>20)throw new Error('Choose a quantity from 0 to 20.');if(quantity){lines.push({...item,quantity,total:item.price*quantity});subtotal+=item.price*quantity;count+=quantity;}}const delivery=count?(r.delivery??50):0;return {lines,count,subtotal,delivery,total:subtotal+delivery};}
 export function rideFare(route){return route?Math.max(150,Math.ceil((75+20*route.distance/1000)/5)*5):200;}
 export function findRoute(routes,a,b){return a&&b&&a.id&&b.id?routes[`${a.id}-${b.id}`]||null:null;}
 export function nextStep(job){const steps=job.type==='food'?FOOD_STEPS:RIDE_STEPS;if(job.cancelled||job.step>=steps.length-1)return job;return {...job,step:job.step+1};}
