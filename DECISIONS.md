@@ -2,6 +2,12 @@
 
 Newest first. Record who decided, when, and why. Open questions live at the end.
 
+## 2026-10-19 — Code on GitHub
+
+- **Approved by:** Kinteh.
+- **Where:** https://github.com/abubakarrkinteh/RideApp, branch `main`, plus the `baseline-demo-v2` tag. The repo already held a README from 8 October 2026; its history was joined, not overwritten.
+- **Not uploaded:** `.env.local` and `node_modules` (ignored by Git). Only the public Supabase URL and publishable key are in the code.
+
 ## 2026-10-19 — Food menu read from Supabase
 
 - **Approved by:** Kinteh ("yes").
@@ -48,4 +54,3 @@ Newest first. Record who decided, when, and why. Open questions live at the end.
 - Launch area.
 - Wave merchant/API eligibility for the Gambian business.
 - How the app reaches phones: installable web app, wrapped Android/iPhone app, or both.
-- Online code repository (where to push this Git history).
