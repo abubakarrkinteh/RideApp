@@ -2,6 +2,22 @@
 
 Newest first. Record who decided, when, and why. Open questions live at the end.
 
+## 2026-10-19 — First database tables (not yet in Supabase)
+
+- **Approved by:** Kinteh ("yes go for it").
+- **Added:** `supabase/migrations/` with accounts, roles, restaurants, menus and food orders, plus `supabase/seed.sql` with the three fictional demo restaurants marked `is_test`.
+- **Rules:** every sign-up gets the customer role only; only an admin grants other roles; tables are read-only to the app and all changes go through server functions; the server works out prices in bututs (GMD); a repeated order key returns the first order; a changed price is refused with `PRICE_CHANGED`; prices are copied onto each order line; customers, other restaurants and visitors cannot see someone else's order.
+- **Simulated still:** payment (`payment_mode` can only be `simulated`), couriers, drivers, rides. The app screens do not use the database yet.
+- **Tested:** `npm test` runs `checks/db.mjs`, which loads the migrations into an in-memory Postgres (PGlite) with a stand-in for Supabase auth. A deliberately broken privacy rule made the check fail. This does not prove the hosted project; that needs a check after the tables are applied.
+- **First admin:** set by the project owner in the Supabase SQL editor. No app screen can create an admin.
+
+## 2026-10-19 — Backend provider: Supabase
+
+- **Decided by:** Kinteh.
+- **Decision:** Supabase, Free plan, region West EU (London), project `ilktsryrughillibeptz`. Upgrade to Pro later when needed.
+- **Why:** Europe is the fastest nearby region for The Gambia; free is enough for building and testing.
+- **Settings:** the Project URL and publishable key are in `.env.local`, which Git ignores. The secret key and database password are not stored in this folder and never go in chat. A connection check succeeded on 19 October 2026 (email sign-in on, phone off).
+
 ## 2026-10-16 — Build on the demo code
 
 - **Decided by:** Kinteh.
@@ -18,7 +34,7 @@ Newest first. Record who decided, when, and why. Open questions live at the end.
 
 ## Open decisions
 
-- Backend provider (accounts, database, server functions).
+- How the database tables are applied to Supabase (SQL editor now, Supabase CLI later).
 - First live service: Food or Ride.
 - Launch area.
 - Wave merchant/API eligibility for the Gambian business.

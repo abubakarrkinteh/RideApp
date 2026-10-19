@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Approved RideApp demo source and Claude Code handoff",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "test": "node checks/demo.mjs"
+    "test": "node checks/demo.mjs && node checks/db.mjs",
+    "test:db": "node checks/db.mjs"
   },
-  "devDependencies": {"linkedom": "0.18.12"}
+  "devDependencies": {"@electric-sql/pglite": "0.5.8", "linkedom": "0.18.12"}
 }
