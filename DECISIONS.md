@@ -2,13 +2,14 @@
 
 Newest first. Record who decided, when, and why. Open questions live at the end.
 
-## 2026-10-19 — First database tables (not yet in Supabase)
+## 2026-10-19 — First database tables (applied to Supabase)
 
 - **Approved by:** Kinteh ("yes go for it").
 - **Added:** `supabase/migrations/` with accounts, roles, restaurants, menus and food orders, plus `supabase/seed.sql` with the three fictional demo restaurants marked `is_test`.
 - **Rules:** every sign-up gets the customer role only; only an admin grants other roles; tables are read-only to the app and all changes go through server functions; the server works out prices in bututs (GMD); a repeated order key returns the first order; a changed price is refused with `PRICE_CHANGED`; prices are copied onto each order line; customers, other restaurants and visitors cannot see someone else's order.
 - **Simulated still:** payment (`payment_mode` can only be `simulated`), couriers, drivers, rides. The app screens do not use the database yet.
 - **Tested:** `npm test` runs `checks/db.mjs`, which loads the migrations into an in-memory Postgres (PGlite) with a stand-in for Supabase auth. A deliberately broken privacy rule made the check fail. This does not prove the hosted project; that needs a check after the tables are applied.
+- **Applied:** 19 October 2026 through the Supabase SQL Editor, as one all-or-nothing transaction. Checked with the publishable key: the 3 test restaurants and 10 menu items are readable; visitors are refused orders, order items, profiles, roles, staff links, `place_order`, `grant_role` and writing to the menu. Signed-in user checks on the hosted project are still to do. Supabase does not record these as CLI migrations yet; mark them applied with `supabase migration repair` before using the CLI.
 - **First admin:** set by the project owner in the Supabase SQL editor. No app screen can create an admin.
 
 ## 2026-10-19 — Backend provider: Supabase
