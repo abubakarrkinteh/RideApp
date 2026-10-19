@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "test": "node checks/demo.mjs && node checks/menu.mjs && node checks/db.mjs",
+    "test": "node checks/demo.mjs && node checks/menu.mjs && node checks/order-flow.mjs && node checks/db.mjs",
     "test:db": "node checks/db.mjs"
   },
   "devDependencies": {"@electric-sql/pglite": "0.5.8", "linkedom": "0.18.12"}

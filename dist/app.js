@@ -2,9 +2,12 @@ import {PLACES,RESTAURANTS,useMenu,FOOD_STEPS,RIDE_STEPS,money,escapeHTML as esc
 import {ROUTES} from './routes.js';
 import {fetchMenu} from './menu.js';
 import {SUPABASE} from './config.js';
+import {createAuth,AuthError} from './auth.js';
+import {placeOrder} from './orders.js';
 
 const app=document.getElementById('app');
-const state={screen:'home',restaurantId:'kitchen',cartRestaurant:null,cart:{},filter:'All',search:'',payment:'Wave',delivery:{...place('senegambia')},landmark:'Near the main road',notes:'',from:{...place('brusubi')},to:{...place('senegambia')},pinMode:'to',pickupNote:'',jobs:[],selectedJob:null,sequence:1,menuSource:'demo'};
+const state={screen:'home',restaurantId:'kitchen',cartRestaurant:null,cart:{},filter:'All',search:'',payment:'Wave',delivery:{...place('senegambia')},landmark:'Near the main road',notes:'',from:{...place('brusubi')},to:{...place('senegambia')},pinMode:'to',pickupNote:'',jobs:[],selectedJob:null,sequence:1,menuSource:'demo',authEmail:'',authBusy:false,authNote:'',afterSignIn:null,orderKey:null,placing:false};
+const auth=createAuth(SUPABASE);
 let map=null,toastTimer=null;
 const route=(a,b)=>findRoute(ROUTES,a,b);
 const btn=(text,action,cls='primary',extra='')=>`<button type="button" class="btn ${cls}" data-action="${action}" ${extra}>${text}</button>`;
@@ -39,19 +42,34 @@ function menu(){const r=restaurant(state.restaurantId);return `${back('food','Re
 function basketBar(){const t=totals();return t.count?`<div class="basket-bar"><button class="btn primary" data-action="cart"><span>View basket (${t.count})</span><span>${money(t.subtotal)}</span></button></div>`:'';}
 function cart(){const t=totals();if(!t.count)return `${back('food','Restaurants')}<div class="empty"><span class="emoji" aria-hidden="true">🍲</span><h1>Your basket is empty.</h1><p class="muted">Choose a meal to get started.</p>${btn('Explore food','food')}</div>`;const r=restaurant(state.cartRestaurant);return `${back('menu','Back to menu')}<h1>Your basket.</h1><p class="muted">${esc(r.name)} · Sample order</p>${t.lines.map(i=>`<article class="menu-item"><div><h3>${esc(i.name)}</h3><p>${money(i.price)} each</p><span class="price">${money(i.total)}</span></div>${stepper(i,r.id)}</article>`).join('')}<div class="section-gap">${priceRow('Meals',t.subtotal)}${priceRow('Example delivery fee',t.delivery)}${priceRow('Total',t.total,true)}</div>${btn('Continue to delivery','delivery','primary full')}<p class="notice section-gap">One restaurant per basket. No hidden service charge in this demo.</p>`;}
 function delivery(){const r=restaurant(state.cartRestaurant);return `${back('cart','Basket')}<h1>Where should it go?</h1><p class="muted">Choose an example delivery location.</p>${locationSelect('delivery-area','Delivery area',state.delivery)}<label class="label" for="landmark">Landmark or delivery instructions</label><input id="landmark" maxlength="160" value="${esc(state.landmark)}" placeholder="For example, near the roundabout"><label class="label" for="food-notes">Meal notes (optional)</label><textarea id="food-notes" maxlength="200" placeholder="Any notes for this sample order?">${esc(state.notes)}</textarea>${btn('Use my location','gps-delivery','secondary full')}${mapSection(place(r.area),state.delivery,true,true)}${btn('Review order','review-food','primary full')}${errorArea()}`;}
-function foodReview(){const t=totals(),r=restaurant(state.cartRestaurant);return `${back('delivery','Delivery details')}<h1>Your order.</h1><div class="panel"><h3>${esc(r.name)}</h3>${t.lines.map(i=>`<div class="cost-row"><span>${i.quantity} × ${esc(i.name)}</span><span>${money(i.total)}</span></div>`).join('')}</div><div class="panel"><h3>Delivery to ${esc(state.delivery.name)}</h3><p class="small muted">${esc(state.landmark)}</p>${state.notes?`<p class="small">Meal notes: ${esc(state.notes)}</p>`:''}</div>${payment()}${priceRow('Meals',t.subtotal)}${priceRow('Example delivery fee',t.delivery)}${priceRow('Total',t.total,true)}${btn('Place demo order','place-food','primary full')}<p class="notice section-gap">No money will be charged. No restaurant or courier receives this order.</p>${errorArea()}`;}
+function foodReview(){const t=totals(),r=restaurant(state.cartRestaurant);return `${back('delivery','Delivery details')}<h1>Your order.</h1><div class="panel"><h3>${esc(r.name)}</h3>${t.lines.map(i=>`<div class="cost-row"><span>${i.quantity} × ${esc(i.name)}</span><span>${money(i.total)}</span></div>`).join('')}</div><div class="panel"><h3>Delivery to ${esc(state.delivery.name)}</h3><p class="small muted">${esc(state.landmark)}</p>${state.notes?`<p class="small">Meal notes: ${esc(state.notes)}</p>`:''}</div>${payment()}${priceRow('Meals',t.subtotal)}${priceRow('Example delivery fee',t.delivery)}${priceRow('Total',t.total,true)}${foodOrderButton()}${errorArea()}`;}
+// Orders are saved on the server only when the menu came from the database and the person is signed in.
+function liveOrders(){return state.menuSource==='database';}
+function foodOrderButton(){
+  if(!liveOrders())return `${btn('Place demo order','place-food','primary full')}<p class="notice section-gap">No money will be charged. No restaurant or courier receives this order.</p>`;
+  if(!auth.user)return `${btn('Sign in to place order','sign-in-to-order','primary full')}<p class="notice section-gap">Sign in to save this order in the RideApp test database. No money will be charged.</p>`;
+  return `${btn(state.placing?'Placing order…':'Place test order','place-food','primary full',state.placing?'disabled':'')}<p class="notice section-gap">This order is saved in the RideApp test database. No money will be charged. No restaurant or courier receives it yet.</p>`;
+}
+function account(){
+  const backTo=state.afterSignIn==='food-review'?back('food-review','Your order'):back('activity','Activity');
+  const note=state.authNote?`<div class="panel"><p class="small">${esc(state.authNote)}</p></div>`:'';
+  if(auth.user)return `${backTo}<h1>Your account.</h1>${note}<div class="panel"><h3>Signed in</h3><p class="small muted">${esc(auth.user.email||'Email confirmed')}</p></div>${btn('Sign out','sign-out','secondary full')}<p class="notice section-gap">Test accounts only. Orders you place are saved in the RideApp test database. No money is charged.</p>`;
+  const busy=state.authBusy?'disabled':'';
+  return `${backTo}<h1>Sign in.</h1><p class="muted">Use your email to save test orders.</p>${note}<label class="label" for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="email" maxlength="120" value="${esc(state.authEmail)}"><label class="label" for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password" maxlength="72">${btn(state.authBusy?'Please wait…':'Sign in','sign-in','primary full',busy)}${btn('Create account','sign-up','secondary full',busy)}${errorArea()}<p class="notice section-gap">Test accounts only. Passwords need at least 8 characters. A new account gets an email with a link to confirm it.</p>`;
+}
+function accountLine(){if(!SUPABASE.url)return '';const email=auth.user?.email;return `<div class="row"><span class="small muted">${auth.user?'Signed in'+(email?' as '+esc(email):''):'Not signed in'}</span><button type="button" class="text-button" data-action="account">${auth.user?'Account':'Sign in'}</button></div>`;}
 function ride(){const r=route(state.from,state.to);return `${back('home','Home')}<h1>Where to?</h1><p class="muted">Choose sample areas, or place your own pins.</p>${locationSelect('ride-from','Pickup',state.from)}<div class="split-controls"><div>${locationSelect('ride-to','Destination',state.to)}</div>${btn('Swap','swap','secondary compact')}</div><div class="row flex-wrap section-gap">${btn('Use my location','gps-ride','secondary compact')}<span class="small muted">Pickup pin A · destination B</span></div>${mapSection(state.from,state.to,true)}<div class="panel row"><div><h3>Standard ride</h3><span class="small muted">Demo vehicle · up to 4 people</span></div><span class="trip-price">${money(rideFare(r))}</span></div><p class="notice">Example fare${r?' based on the saved route':' only; custom route not priced'}. No live traffic or driver availability.</p><label class="label" for="pickup-note">Pickup landmark (optional)</label><input id="pickup-note" maxlength="160" value="${esc(state.pickupNote)}" placeholder="Help the driver find the meeting point">${btn('Review demo ride','review-ride','primary full')}${errorArea()}`;}
 function rideReview(){const r=route(state.from,state.to);return `${back('ride','Edit route')}<h1>Your ride.</h1><div class="panel">${endpoints(state.from,state.to)}${state.pickupNote?`<p class="small muted">Pickup note: ${esc(state.pickupNote)}</p>`:''}</div><p class="muted">Standard ride · up to 4 people</p>${payment()}${priceRow('Example ride fare',rideFare(r))}${priceRow('Total',rideFare(r),true)}<p class="notice section-gap">${r?'Demo rate: D 75 + D 20/km, rounded up to D 5; minimum D 150.':'Custom locations use a flat D 200 example price, not a route quote.'}</p>${btn('Request demo ride','place-ride','primary full')}<p class="notice section-gap">No taxi is dispatched and no payment is made.</p>${googleLink(state.from,state.to)}${errorArea()}`;}
 function jobStatus(job){return job.cancelled?'Cancelled in demo':(job.type==='food'?FOOD_STEPS:RIDE_STEPS)[job.step];}
-function activity(){return `<h1>Your activity.</h1><p class="muted">Demo orders and rides from this visit.</p>${state.jobs.length?`<div class="stack">${state.jobs.map(j=>`<button class="activity-card" data-action="job" data-id="${j.id}"><div class="row"><strong>${j.type==='food'?'🍲 '+esc(j.restaurantName):'🚕 Standard ride'}</strong><span class="price">${money(j.total)}</span></div><small>${esc(jobStatus(j))}</small><small>${esc(j.from.name)} to ${esc(j.to.name)}</small></button>`).join('')}</div><p class="notice section-gap">This history is temporary and resets when you reload the page.</p>`:`<div class="empty"><span class="emoji" aria-hidden="true">☷</span><h2>Nothing here yet.</h2><p class="muted">Try a food order or a ride. You’ll see its demo progress here.</p>${btn('Explore the demo','home')}</div>`}`;}
-function status(){const j=state.jobs.find(j=>j.id===state.selectedJob);if(!j)return activity();const steps=j.type==='food'?FOOD_STEPS:RIDE_STEPS;const complete=j.step===4;return `${back('activity','Activity')}<p class="eyebrow">${esc(j.id)} · Simulation</p><h1>${esc(jobStatus(j))}.</h1><p class="muted">${j.cancelled?'This demo request has been cancelled.':complete?'You have completed this demo journey.':'Use the button below to move through the demo.'}</p>${j.type==='ride'&&j.step>=1&&!j.cancelled?'<div class="panel"><h3>Demo driver</h3><p class="small muted">Example car · no real driver is assigned</p></div>':''}<div class="panel">${endpoints(j.from,j.to)}</div>${!j.cancelled?`<ol class="status-list">${steps.map((s,i)=>`<li class="${i<j.step?'done':i===j.step?'current':''}"><span class="step-dot">${i<j.step?'✓':i+1}</span><span><strong>${s}</strong>${i===j.step?'<small>Current demo step</small>':''}</span></li>`).join('')}</ol>`:''}${!complete&&!j.cancelled?btn('Next demo step','advance','primary full'):btn('Try something else','home','primary full')}${!complete&&!j.cancelled?'<button class="text-button cancel" data-action="cancel">Cancel demo request</button>':''}${mapSection(j.from,j.to)}<div class="panel"><h3>Example receipt</h3>${j.lines?j.lines.map(i=>priceRow(`${i.quantity} × ${esc(i.name)}`,i.total)).join('')+priceRow('Example delivery fee',j.deliveryFee):priceRow('Example ride fare',j.total)}${priceRow('Total',j.total,true)}<p class="notice section-gap">${esc(j.payment)} selected. No money was charged${j.payment==='Cash'?' and no cash is due':''}.</p></div>`;}
+function activity(){return `<h1>Your activity.</h1><p class="muted">Demo orders and rides from this visit.</p>${accountLine()}${state.jobs.length?`<div class="stack">${state.jobs.map(j=>`<button class="activity-card" data-action="job" data-id="${j.id}"><div class="row"><strong>${j.type==='food'?'🍲 '+esc(j.restaurantName):'🚕 Standard ride'}</strong><span class="price">${money(j.total)}</span></div><small>${esc(jobStatus(j))}</small><small>${esc(j.from.name)} to ${esc(j.to.name)}</small></button>`).join('')}</div><p class="notice section-gap">This history is temporary and resets when you reload the page.</p>`:`<div class="empty"><span class="emoji" aria-hidden="true">☷</span><h2>Nothing here yet.</h2><p class="muted">Try a food order or a ride. You’ll see its demo progress here.</p>${btn('Explore the demo','home')}</div>`}`;}
+function status(){const j=state.jobs.find(j=>j.id===state.selectedJob);if(!j)return activity();const steps=j.type==='food'?FOOD_STEPS:RIDE_STEPS;const complete=j.step===4;return `${back('activity','Activity')}<p class="eyebrow">${esc(j.id)} · ${j.saved?'Saved test order':'Simulation'}</p><h1>${esc(jobStatus(j))}.</h1><p class="muted">${j.cancelled?'This demo request has been cancelled.':complete?'You have completed this demo journey.':'Use the button below to move through the demo.'}</p>${j.saved?`<div class="panel"><h3>Saved in the test database</h3><p class="small muted">Server status: ${esc(j.serverStatus)}. The server checked the price. The steps below are still a demo.</p></div>`:''}${j.type==='ride'&&j.step>=1&&!j.cancelled?'<div class="panel"><h3>Demo driver</h3><p class="small muted">Example car · no real driver is assigned</p></div>':''}<div class="panel">${endpoints(j.from,j.to)}</div>${!j.cancelled?`<ol class="status-list">${steps.map((s,i)=>`<li class="${i<j.step?'done':i===j.step?'current':''}"><span class="step-dot">${i<j.step?'✓':i+1}</span><span><strong>${s}</strong>${i===j.step?'<small>Current demo step</small>':''}</span></li>`).join('')}</ol>`:''}${!complete&&!j.cancelled?btn('Next demo step','advance','primary full'):btn('Try something else','home','primary full')}${!complete&&!j.cancelled?'<button class="text-button cancel" data-action="cancel">Cancel demo request</button>':''}${mapSection(j.from,j.to)}<div class="panel"><h3>Example receipt</h3>${j.lines?j.lines.map(i=>priceRow(`${i.quantity} × ${esc(i.name)}`,i.total)).join('')+priceRow('Example delivery fee',j.deliveryFee):priceRow('Example ride fare',j.total)}${priceRow('Total',j.total,true)}<p class="notice section-gap">${esc(j.payment)} selected. No money was charged${j.payment==='Cash'?' and no cash is due':''}.</p></div>`;}
 
 function render(){
   if(map){map.remove();map=null;}
   if(['delivery','food-review'].includes(state.screen)&&!totals().count)state.screen='cart';
-  const views={home,food,menu,cart,delivery,'food-review':foodReview,ride,'ride-review':rideReview,activity,status};
+  const views={home,food,menu,cart,delivery,'food-review':foodReview,ride,'ride-review':rideReview,activity,status,account};
   app.innerHTML=(views[state.screen]||home)();
-  const current=['menu','cart','delivery','food-review'].includes(state.screen)?'food':state.screen==='ride-review'?'ride':state.screen==='status'?'activity':state.screen;
+  const current=['menu','cart','delivery','food-review'].includes(state.screen)?'food':state.screen==='ride-review'?'ride':['status','account'].includes(state.screen)?'activity':state.screen;
   for(const nav of document.querySelectorAll('.bottom-nav [data-action]')){if(nav.dataset.action===current)nav.setAttribute('aria-current','page');else nav.removeAttribute('aria-current');}
   const count=document.getElementById('activity-count');count.hidden=!state.jobs.length;count.textContent=String(state.jobs.length);
   if(state.screen==='ride')mountMap(state.from,state.to,true,false);
@@ -89,10 +107,38 @@ function geolocate(foodMode){
 function changeQuantity(itemId,rid,delta){
   const r=restaurant(rid);if(!r||!r.items.some(i=>i.id===itemId)||![1,-1].includes(delta))return;
   if(state.cartRestaurant&&state.cartRestaurant!==rid&&totals().count){if(delta<0)return;if(!window.confirm('Start a new basket from '+r.name+'? Your current basket will be cleared.'))return;state.cart={};}
-  state.cartRestaurant=rid;const current=state.cart[itemId]||0;const next=Math.max(0,Math.min(20,current+delta));if(next)state.cart[itemId]=next;else delete state.cart[itemId];
+  state.cartRestaurant=rid;state.orderKey=null;const current=state.cart[itemId]||0;const next=Math.max(0,Math.min(20,current+delta));if(next)state.cart[itemId]=next;else delete state.cart[itemId];
   render();const target=document.querySelector(`[data-action="quantity"][data-id="${itemId}"][data-delta="${delta}"]`);target?.focus({preventScroll:true});
 }
-function createFood(){if(state.screen!=='food-review')return;const t=totals(),r=restaurant(state.cartRestaurant);if(!r||!t.count){go('cart');return;}if(!state.landmark.trim()||!validPoint(state.delivery)){showError('Add a delivery location and landmark.');return;}const job={id:'DEMO-'+String(state.sequence++).padStart(3,'0'),type:'food',step:0,cancelled:false,restaurantName:r.name,from:{...place(r.area)},to:{...state.delivery},lines:t.lines.map(i=>({...i})),deliveryFee:t.delivery,total:t.total,payment:state.payment,landmark:state.landmark,notes:state.notes};state.jobs.unshift(job);state.selectedJob=job.id;state.cart={};state.cartRestaurant=null;go('status');}
+function createFood(){if(state.screen!=='food-review')return;const t=totals(),r=restaurant(state.cartRestaurant);if(!r||!t.count){go('cart');return;}if(!state.landmark.trim()||!validPoint(state.delivery)){showError('Add a delivery location and landmark.');return;}if(liveOrders()){saveFood(r,t);return;}const job={id:'DEMO-'+String(state.sequence++).padStart(3,'0'),type:'food',step:0,cancelled:false,restaurantName:r.name,from:{...place(r.area)},to:{...state.delivery},lines:t.lines.map(i=>({...i})),deliveryFee:t.delivery,total:t.total,payment:state.payment,landmark:state.landmark,notes:state.notes};state.jobs.unshift(job);state.selectedJob=job.id;state.cart={};state.cartRestaurant=null;go('status');}
+const newKey=()=>globalThis.crypto?.randomUUID?globalThis.crypto.randomUUID():'10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16));
+// Saves the order on the server. The same key is reused on retry, so a retry never makes a second order.
+async function saveFood(r,t){
+  if(state.placing)return;
+  let token;try{token=await auth.accessToken();}catch(error){showError(error.message);return;}
+  if(!token){state.afterSignIn='food-review';state.authNote='Please sign in again to place your order.';go('account');return;}
+  state.orderKey||=newKey();state.placing=true;render();
+  try{
+    const order=await placeOrder(SUPABASE,token,{restaurantId:r.id,lines:t.lines,address:(state.delivery.name+' · '+state.landmark.trim()).slice(0,300),note:state.notes.trim(),key:state.orderKey,total:t.total});
+    const job={id:'RA-'+String(order.id).slice(0,8).toUpperCase(),orderId:order.id,saved:true,serverStatus:order.status,type:'food',step:0,cancelled:false,restaurantName:r.name,from:{...place(r.area)},to:{...state.delivery},lines:t.lines.map(i=>({...i})),deliveryFee:order.delivery_fee_minor/100,total:order.total_minor/100,payment:state.payment,landmark:state.landmark,notes:state.notes};
+    state.jobs.unshift(job);state.selectedJob=job.id;state.cart={};state.cartRestaurant=null;state.orderKey=null;state.placing=false;go('status');
+  }catch(error){
+    state.placing=false;
+    if(['PRICE_CHANGED','ITEM_NOT_AVAILABLE','RESTAURANT_CLOSED','RESTAURANT_NOT_FOUND'].includes(error.code)){state.orderKey=null;await loadMenu();}
+    if(['NOT_ALLOWED','JWT'].includes(error.code)){await auth.signOut();state.afterSignIn='food-review';state.authNote=error.message;go('account');return;}
+    render();showError(error.message||'The order could not be saved. Please try again.');
+  }
+}
+async function signIn(create){
+  const email=document.getElementById('auth-email')?.value||'',password=document.getElementById('auth-password')?.value||'';
+  state.authEmail=email.slice(0,120);state.authBusy=true;state.authNote='';render();
+  try{
+    if(create){const result=await auth.signUp(email,password,returnURL());if(result.confirmEmail){state.authBusy=false;state.authNote='Almost done. We sent an email to '+email.trim()+'. Open the link in it, then come back and sign in.';render();return;}}
+    else await auth.signIn(email,password);
+    state.authBusy=false;const next=state.afterSignIn||'activity';state.afterSignIn=null;toast('You are signed in.');go(next);
+  }catch(error){state.authBusy=false;render();showError(error instanceof AuthError?error.message:'Sign-in did not work. Please try again.');}
+}
+const returnURL=()=>globalThis.location?.origin&&globalThis.location.origin!=='null'?globalThis.location.origin+globalThis.location.pathname:undefined;
 function createRide(){if(state.screen!=='ride-review')return;if(!validPoint(state.from)||!validPoint(state.to)||samePoint(state.from,state.to)){showError('Choose different pickup and destination locations.');return;}const job={id:'DEMO-'+String(state.sequence++).padStart(3,'0'),type:'ride',step:0,cancelled:false,from:{...state.from},to:{...state.to},total:rideFare(route(state.from,state.to)),payment:state.payment,pickupNote:state.pickupNote};state.jobs.unshift(job);state.selectedJob=job.id;go('status');}
 
 document.addEventListener('click',event=>{
@@ -108,6 +154,11 @@ document.addEventListener('click',event=>{
   if(action==='gps-delivery')geolocate(true);
   if(action==='review-food'){if(!state.landmark.trim()){showError('Enter a landmark or delivery instruction to continue.');return;}go('food-review');}
   if(action==='review-ride'){if(samePoint(state.from,state.to)){showError('Choose different pickup and destination locations.');return;}go('ride-review');}
+  if(action==='account'){state.afterSignIn=null;state.authNote='';go('account');}
+  if(action==='sign-in-to-order'){state.afterSignIn='food-review';state.authNote='';go('account');}
+  if(action==='sign-in')signIn(false);
+  if(action==='sign-up')signIn(true);
+  if(action==='sign-out'){auth.signOut();state.authNote='';toast('You are signed out.');render();}
   if(action==='place-food')createFood();
   if(action==='place-ride')createRide();
   if(action==='job'){state.selectedJob=target.dataset.id;go('status');}
@@ -118,6 +169,7 @@ document.addEventListener('input',event=>{
   const el=event.target;
   if(el.id==='food-search'){state.search=el.value.slice(0,80);document.getElementById('restaurants').innerHTML=restaurantCards();}
   if(el.id==='landmark')state.landmark=el.value.slice(0,160);
+  if(el.id==='auth-email')state.authEmail=el.value.slice(0,120);
   if(el.id==='food-notes')state.notes=el.value.slice(0,200);
   if(el.id==='pickup-note')state.pickupNote=el.value.slice(0,160);
 });
@@ -128,6 +180,8 @@ document.addEventListener('change',event=>{
   if(['ride-from','ride-to','delivery-area'].includes(el.id)){const p=place(el.value);if(!p)return;state[el.id==='ride-from'?'from':el.id==='ride-to'?'to':'delivery']={...p};render();}
 });
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();try{Promise.resolve(document.modelContext.registerTool({name:'start_rideapp_demo_flow',title:'Open a RideApp demo screen',description:'Navigate to home, food, ride or activity. No orders or payments are sent.',inputSchema:{type:'object',properties:{screen:{type:'string',enum:['home','food','ride','activity']}},required:['screen'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){if(!input||Object.keys(input).some(k=>k!=='screen')||!['home','food','ride','activity'].includes(input.screen))throw new Error('Choose a valid demo screen.');go(input.screen);return {screen:state.screen,demo:true,realRequestSent:false};}},{signal:lifecycle.signal})).catch(()=>{});}catch{}window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});}
+// Coming back from the email link: keep the session and clean the address bar.
+if(auth.takeSessionFromHash(globalThis.location?.hash)){globalThis.history?.replaceState?.(null,'',globalThis.location.pathname+globalThis.location.search);state.authNote='Email confirmed. You are signed in.';state.screen='account';auth.loadEmail().then(render,()=>{});}
 render();
 
 // Load the restaurant menu from Supabase. If that fails, the built-in demo menu stays.

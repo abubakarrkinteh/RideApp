@@ -2,6 +2,16 @@
 
 Newest first. Record who decided, when, and why. Open questions live at the end.
 
+## 2026-10-19 — Email sign-in and saved test orders
+
+- **Approved by:** Kinteh ("yes").
+- **Change:** `dist/auth.js` signs in with Supabase Auth email + password over its REST API (no extra library) and keeps the session in the browser, refreshing it before it runs out. `dist/orders.js` sends the basket to `place_order`. New "Sign in." / "Your account." screens use the existing panels, inputs and buttons; Activity shows "Signed in as …" with a Sign in / Account link.
+- **When orders are saved:** only when the menu came from the database and the person is signed in. Then the button says "Place test order" and the server checks the price and saves the order. Otherwise the old demo order flow is unchanged.
+- **Safety:** each order attempt has one key, kept for retries, so a dropped connection cannot make two orders. A changed price is refused, the menu reloads and the new total is shown. Too-short passwords and bad emails are stopped before sending.
+- **Still simulated:** payment, and every step after "placed" (restaurant, courier, delivery). The status screen says so. Saved orders are not yet reloaded into Activity after a page reload.
+- **Email confirmation:** on in Supabase (`mailer_autoconfirm` false). The link returns to the Site URL set in Supabase; until that is set to the app's address, the link may open an error page but the account is still confirmed.
+- **Tested:** `checks/order-flow.mjs` clicks through sign-in errors, sign-in, an offline first try plus retry with the same key, a price change and sign-up against a fake Supabase. A deliberately broken retry key made it fail. In the in-app browser the review screen showed "Sign in to place order" and the sign-in screen rendered without console errors. Sign-in against the hosted project has not been tried yet; that needs Kinteh's own account.
+
 ## 2026-10-19 — Code on GitHub
 
 - **Approved by:** Kinteh.
